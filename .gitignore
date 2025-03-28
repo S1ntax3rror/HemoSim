@@ -1,0 +1,15 @@
+*.dcd
+*.npz
+*.psf
+*.xml
+*.crd
+*.sh
+*.iml
+*.npy
+*.tga
+*.png
+*.str
+*.inp
+*.out
+*.prm
+*.rtf
