@@ -1,0 +1,13 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+*.dcd
+*.npz
+*.npy
+*.tga
+*.png
+*.str
+*.inp
+*.out
+*.prm
+*.rtf
