@@ -231,9 +231,8 @@ if __name__ == "__main__":
 
     # if setup required before start, submit setup first
     # and wait observe till completed then run the setup
-    if len(arguments) > 1 and arguments[1] == "setup":
+    if arguments[1] == "setup":
         tskid = submit_setupfile()
-        log_2_file(f"Setups task id: {tskid:d}")
         observe_loop(tskid)
 
     # Find new step

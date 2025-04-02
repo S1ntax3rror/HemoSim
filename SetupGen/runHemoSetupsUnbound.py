@@ -1,5 +1,6 @@
 import subprocess
 import os
+import sys
 from multiprocessing import Pool
 
 
@@ -17,7 +18,11 @@ def replace_line_in_file(file, old_line, new_line):
 
 
 def observe_run(path):
-    result = subprocess.run(['python3', 'Observer.py'], capture_output=True, text=True, cwd=path)
+    args = sys.argv
+    if len(args) > 1 and args[1] == "setup":
+        result = subprocess.run(['python3', 'Observer.py', 'setup'], capture_output=True, text=True, cwd=path)
+    else:
+        result = subprocess.run(['python3', 'Observer.py'], capture_output=True, text=True, cwd=path)
     text = result.stdout
     text_err = result.stderr
 
@@ -38,10 +43,12 @@ if __name__ == "__main__":
         sh_file_paths.append(run_path)
 
     print(sh_file_paths)
-    good_gpus = ["gpu04", "gpu25", "gpu06", "gpu26", "gpu03", "gpu12", "gpu13", "gpu18", "gpu01", "gpu02"]
 
     with Pool(processes=len(sh_file_paths)) as pool:
         pool.map(observe_run, sh_file_paths)
+
+
+    good_gpus = ["gpu04", "gpu25", "gpu06", "gpu26", "gpu03", "gpu12", "gpu13", "gpu18", "gpu01", "gpu02"]
 
     # for path in sh_file_paths:
     #     result = subprocess.run(['python3', 'Observer.py'], capture_output=True, text=True, cwd=path)
