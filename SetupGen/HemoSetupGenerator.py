@@ -1,8 +1,16 @@
 import os
 import shutil
-from gettext import lngettext
+import sys
 from os import mkdir
 from distutils.dir_util import copy_tree
+
+"""
+var hemo_base_path: needs to be set
+var path_setup_destination: can be chosen or left at default
+
+
+"""
+
 
 
 def generate_all_permutations_unbound(active_directory, base_setup_directory):
@@ -51,29 +59,97 @@ def generate_all_permutations_unbound(active_directory, base_setup_directory):
                         f.close()
 
 
+def gen_setups(hemo_base, dest_path):
+    if os.path.exists(cwd + "/" + dest_path) and (not overwrite and not live):
+        print("EITHER SET OVERWRITE TRUE OR CHANGE PATH")
+        exit()
+    elif os.path.exists(cwd + "/" + dest_path):
+        shutil.rmtree(cwd + "/" + dest_path)
+
+    mkdir(cwd + "/" + dest_path)
+    active_dir = cwd + "/" + dest_path
+
+    generate_all_permutations_unbound(active_dir, hemo_base)
+
+
+def gen_multiple_setups(hemo_base, multiple_dests):
+    # get all setup folders (hemo_bas_path should be set to parent dict of setups)
+    # generate all destinations:
+    setup_folders_uncleaned = os.listdir(hemo_base)
+    print(setup_folders_uncleaned)
+    setup_folders = []
+    dest_parent_path = os.path.join(cwd, multiple_dests)
+    dest_paths = []
+
+
+    check1 = input(f"Confirm y/n that setup_folder dir is \n {hemo_base} \n ANSWER:  ")
+    if check1 != "y":
+        check2 = input(f"Enter full path to change it or enter n to close: ")
+        if check2 == "n":
+            exit()
+        hemo_base = check2
+        if not os.path.exists(hemo_base):
+            print("Error path doesn't exist")
+            exit()
+
+    for setup_folder in setup_folders_uncleaned:
+        if "toppar" in setup_folder:
+            print("ERROR: Set the parent dictionary as hemo_base_path when using multiple setups!!")
+            exit()
+        print(setup_folder, os.path.isdir(setup_folder))
+        if os.path.isdir(os.path.join(hemo_base, setup_folder)):
+            setup_folders.append(os.path.join(hemo_base, setup_folder))
+            dest_paths.append(os.path.join(dest_parent_path, setup_folder.replace("hemo_setup_", "")))
+
+
+    for setup_folder, dest_path in zip(setup_folders, dest_paths):
+        print("Generating all setups for ", dest_path[-10:], "using", setup_folder[-10:])
+        mkdir(dest_path)
+
+        # make sure folder doesn't exist yet to not overwrite any data
+        if os.path.exists(dest_path) and (not overwrite and not live):
+            print("EITHER SET OVERWRITE TRUE OR CHANGE PATH")
+            exit()
+        elif os.path.exists(dest_path) and (overwrite and not live):  # overwrite if forced and not live
+            shutil.rmtree(dest_path)
+
+
+        generate_all_permutations_unbound(dest_path, setup_folder)
+
+
 if __name__ == "__main__":
 
     overwrite = False
     live = True
+    multiple_setups = False
 
     cwd = os.getcwd()
+    args = sys.argv
 
     if "cluster" in cwd:
         live = True
+        overwrite = False
 
     hemo_base_path = cwd + "/" + "HemoBase"
+    multiple_setup_destination = "Simulation_container/branches_of_main"
     path_setup_destination = "all_perm_unbound_with_ghosts"
 
     if live:
-        hemo_base_path = cwd + "/" + "V3_Kai_setup"
+        if len(args) > 1:
+            hemo_base_path = os.path.join(cwd, args[1])
+            if not os.path.exists(hemo_base_path):
+                hemo_base_path = cwd + "/" + "V4_multiple_setups"
 
-    if os.path.exists(cwd + "/" + path_setup_destination) and (not overwrite and not live):
-        print("EITHER SET OVERWRITE TRUE OR CHANGE PATH")
-        exit()
-    elif os.path.exists(cwd + "/" + path_setup_destination):
-        shutil.rmtree(cwd + "/" + path_setup_destination)
+            if len(args) > 2 and args[2] == "y":
+                multiple_setups = True
 
-    mkdir(cwd + "/" + path_setup_destination)
-    active_dir = cwd + "/" + path_setup_destination
+        else:
+            hemo_base_path = cwd + "/" + "V3_Kai_setup"
 
-    generate_all_permutations_unbound(active_dir, hemo_base_path)
+
+    if multiple_setups:
+        print("starting multiple setups")
+        gen_multiple_setups(hemo_base_path, multiple_setup_destination)
+    else:
+        print("starting single setup")
+        gen_setups(hemo_base_path, path_setup_destination)

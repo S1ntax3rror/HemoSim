@@ -221,6 +221,9 @@ def observe_loop(tskid):
         if current_tskid == 0:
             log_2_file("Job is done!(?)")
             finished = True
+
+        log_2_file("Job running fine!")
+
     return
 
 
