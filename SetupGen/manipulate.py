@@ -1,7 +1,6 @@
 import os
 import sys
 
-from MyoSim.SimulationSetupAndRun.getPocketCenterOfPDB import read_pocket_list
 
 
 def get_hem5_identifier_and_charges():
@@ -34,7 +33,7 @@ def get_hem5_identifier_and_charges():
 
 # Check input
 if len(sys.argv) < 2:
-    raise SyntaxError("Input to small: ", sys.argv)
+    raise SyntaxError("Input too small: ", sys.argv)
 
 # Get case label
 case = sys.argv[1]
@@ -43,10 +42,11 @@ cwd = os.getcwd()
 # For case 'heme':
 # Replace residue labels of the particular segment with the defined residue
 if case.strip().lower() == 'heme':
+    print("Start of manipulation")
 
     # Check input
     if len(sys.argv) < 4:
-        raise SyntaxError("Input to small for HEME manipulation: ", sys.argv)
+        raise SyntaxError("Input too small for HEME manipulation: ", sys.argv)
 
     segment = sys.argv[2]
     residue = sys.argv[3]
@@ -76,6 +76,7 @@ if case.strip().lower() == 'heme':
         if segment in line and "HEME" in line:
             psf_atoms.append([line, il])
 
+
     # Replace lines
     for psf_atom_i, hem5_atom in zip(psf_atoms, Hem5data):
         i = psf_atom_i[1]
@@ -92,17 +93,37 @@ if case.strip().lower() == 'heme':
         if "DUM      DUM      DUM" in line:
             num_dumdum += 1
 
-    # remove one charge by making one sodium a ghost
-    dumdum_i = sod_list[-1]
-    i = dumdum_i[1]
-    dumdum = dumdum_i[0]
-    replacer = dumdum[:11] + "DUM" + dumdum[14:20] + f"{str(num_dumdum):2s}" + dumdum[22:29] + f"{'DUM':3s}" + "      DUM      DUM    " + f"{float(0.00000):11f}" + "      " + dumdum[71:]
-    newlines[i] = replacer
+    co_list = []
+    if len(sys.argv) == 5 and int(sys.argv[4]) == 2:
+        print("removing co")
+        for i, line in enumerate(psflines):
+            if ("CO       C        CM" in line) or ("CO       O        OM" in line):
+                co_list.append([line, i])
 
-    dum_id = replacer[len("     "):len("     67954")]
-    # print(num_dumdum)
-    # print(dumdum)
-    # print(replacer)
+
+    # remove one charge by making one sodium a ghost if HEM is changed to HEM5
+    if len(psf_atoms) != 0:
+        print("replacing hem")
+        dumdum_i = sod_list[-1]
+        i = dumdum_i[1]
+        dumdum = dumdum_i[0]
+        replacer = dumdum[:11] + "DUM" + dumdum[14:20] + f"{str(num_dumdum):2s}" + dumdum[22:29] + f"{'DUM':3s}" + "      DUM      DUM    " + f"{float(0.00000):11f}" + "      " + dumdum[71:]
+        newlines[i] = replacer
+
+        dum_id = replacer[len("     "):len("     67954")]
+        num_dumdum += 1
+
+    # remove all co in co list
+    dum_co_ids = []
+    for co in co_list:
+        dumdum_i = co
+        i = dumdum_i[1]
+        dumdum = dumdum_i[0]
+        replacer = dumdum[:11] + "DUM" + dumdum[14:20] + f"{str(num_dumdum):2s}" + dumdum[22:29] + f"{'DUM':3s}" + "      DUM      DUM   " + f"{float(0.00000):11f}" + "       " + dumdum[71:]
+        newlines[i] = replacer
+
+        dum_co_ids.append(replacer[len("     "):len("     67954")])
+        num_dumdum += 1
 
     # Write manipulated psf file
     with open(psffile, 'w') as fpsf:
@@ -113,13 +134,21 @@ if case.strip().lower() == 'heme':
         crdlines = fcrd.readlines()
     newlines = crdlines.copy()
 
-    # Assign segment the defined residue
-    for il, line in enumerate(crdlines):
-        if segment in line and not "NTHETA" in line:
-            newlines[il] = line[:22] + f"{residue:4s}" + line[26:]
-        if dum_id in line[:len("     67926    ")]:
-            replacer = line[:22] + "DUM       DUM" + line[22 + len("DUM       DUM"):102] + "DUM" + line[105:]
-            newlines[il] = replacer
+    if len(psf_atoms) != 0:
+        # Assign segment the defined residue
+        for il, line in enumerate(crdlines):
+            if segment in line and not "NTHETA" in line:
+                newlines[il] = line[:22] + f"{residue:4s}" + line[26:]
+            if dum_id in line[:len("     67926    ")]:
+                replacer = line[:22] + "DUM       DUM" + line[22 + len("DUM       DUM"):102] + "DUM" + line[105:]
+                newlines[il] = replacer
+
+    for dum_co_id in dum_co_ids:
+        # Assign segment the defined residue
+        for il, line in enumerate(crdlines):
+            if dum_co_id in line[:len("     67926    ")]:
+                replacer = line[:22] + "DUM       DUM" + line[22 + len("DUM       DUM"):102] + "DUM" + line[105:]
+                newlines[il] = replacer
 
     # Write manipulated crd file
     with open(crdfile, 'w') as fcrd:

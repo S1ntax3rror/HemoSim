@@ -18,15 +18,11 @@ def replace_line_in_file(file, old_line, new_line):
 
 
 def observe_run(path):
-    args = sys.argv
-    if len(args) > 1 and args[1] == "setup":
-        result = subprocess.run(['python3', 'Observer.py', 'setup'], capture_output=True, text=True, cwd=path)
-    else:
-        result = subprocess.run(['python3', 'Observer.py'], capture_output=True, text=True, cwd=path)
+    result = subprocess.run(['python3', 'Observer.py'], capture_output=True, text=True, cwd=path)
     text = result.stdout
     text_err = result.stderr
 
-    with open("outfile_sh.out", "w") as file:
+    with open("outfile_sh.out", "a") as file:
         file.write(text)
         file.write(text_err)
 

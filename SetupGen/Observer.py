@@ -14,10 +14,11 @@ from glob import glob
 import getpass
 
 # CHARMM input, output and slurm submission files
-runfile = "run.sh"
-setupfile = "create_run_setup.sh"
-inpfile = "gpu_step5_production.inp"
-outfile = "gpu_step5_production.out"
+runfile = "run.sh"  # Bash script to run the setup
+setupfile = "create_run_setup.sh"  # Bash script to initialize the setup
+inpfile = "gpu_step5_production.inp"  # Input file for charmm
+outfile = "gpu_step5_production.out"  # Output file for charmm
+run_checker_file = "run_setup.psf"  # if this file exists then don't run setup
 
 # CHARMM dcd file name tag
 dcdftag = "step5_*.dcd"
@@ -149,7 +150,7 @@ def check_status(tskid):
         return tskid
     else:
         log_2_file("")
-        log_2_file(datetime.datetime.now(), f": Job {tskid:d} done.")
+        log_2_file(str(datetime.datetime.now()) + f": Job {tskid:d} done.")
 
     if not os.path.exists(os.path.join(os.getcwd(), outfile)):
         return tskid
@@ -160,29 +161,29 @@ def check_status(tskid):
 
     # If not, check for normal termination
     for line in outlines[::-1]:
-        if "NORMAL TERMINATION" in line:
+        if " NORMAL TERMINATION" in line: # keep space to avoid going here through keywords ABNORMAL TERMINATION
             log_2_file(f": Job {tskid:d} finished.")
             return 0
     log_2_file(f": Job {tskid:d} broken. Check restart")
 
     # If not, check for error line in output file
 
-    # Check for error line
-    if errline is None:
-        errline_found = True
-    else:
-        errline_found = False
-        for line in outlines[::-1]:
-            if errline in line:
-                errline_found = True
-                break
-
-    # If error line, found start resubmission, else return
-    if not errline_found:
-        log_2_file("Error not found! Job is done")
-        return 0
-    else:
-        log_2_file("Error found! Restart job")
+    # # Check for error line
+    # if errline is None:
+    #     errline_found = True
+    # else:
+    #     errline_found = False
+    #     for line in outlines[::-1]:
+    #         if errline in line:
+    #             errline_found = True
+    #             break
+    #
+    # # If error line, found start resubmission, else return
+    # if not errline_found:
+    #     log_2_file("Error not found! Job is done")
+    #     return 0
+    # else:
+    #     log_2_file("Error found! Restart job")
 
     # Find new step
     new_step = find_new_step()
@@ -227,13 +228,11 @@ def observe_loop(tskid):
 # Start job and observation
 if __name__ == "__main__":
 
-    arguments = sys.argv
-
-    # if setup required before start, submit setup first
+    # if setup didn't run yet, submit setup first
     # and wait observe till completed then run the setup
-    if len(arguments) > 1 and arguments[1] == "setup":
+    if not os.path.exists(os.path.join(os.getcwd(), run_checker_file)):
         tskid = submit_setupfile()
-        log_2_file(f"Setups task id: {tskid:d}")
+        log_2_file(f"Setup and run task id: {tskid:d}")
         observe_loop(tskid)
 
     # Find new step
