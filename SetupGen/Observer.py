@@ -3,8 +3,6 @@
 # Basics
 import os
 import subprocess
-import sys
-
 import numpy as np
 
 # Miscellaneous
@@ -13,12 +11,17 @@ import datetime
 from glob import glob
 import getpass
 
+log_file = "observer.log"
+if not os.path.exists(log_file):
+    with open(log_file, "w") as f:
+        f.write("Created Logger")
+        f.close()
+
 # CHARMM input, output and slurm submission files
-runfile = "run.sh"  # Bash script to run the setup
-setupfile = "create_run_setup.sh"  # Bash script to initialize the setup
-inpfile = "gpu_step5_production.inp"  # Input file for charmm
-outfile = "gpu_step5_production.out"  # Output file for charmm
-run_checker_file = "run_setup.psf"  # if this file exists then don't run setup
+runfile = "run.sh"
+setupfile = "create_run_setup.sh"
+inpfile = "npt2_step5.inp"
+outfile = "npt2_step5.out"
 
 # CHARMM dcd file name tag
 dcdftag = "step5_*.dcd"
@@ -47,28 +50,17 @@ slptime = 30
 stpfile = "stop"
 
 
-def log_2_file(message):
-
-    print("logging", message)
-
-    log_path = os.path.join(os.getcwd(), "observer_log.txt")
-    if os.path.exists(log_path):
-        with open(log_path, "a") as logfile:
-            logfile.write(message + "\n")
-        logfile.close()
-        return
-
-    with open(log_path, "w") as logfile:
-        logfile.write(message + "\n")
-    logfile.close()
-    return
-
+def log(message):
+    with open(log_file, "a") as f:
+        f.write(message)
+        f.close()
 
 # Function to apply changes to the input file
-def update_inpfile(new_step):
+def update_inpfile(new_step_):
     # Read input file
     with open(inpfile, 'r') as f:
         inplines = f.read()
+        f.close()
 
     # Check equi run
     if os.path.exists(repline_equi[0]):
@@ -79,11 +71,12 @@ def update_inpfile(new_step):
     # Replace step number
     for line in inplines.split("\n"):
         if repline_step[0] in line:
-            inplines = inplines.replace(line, repline_step[1].format(new_step))
+            inplines = inplines.replace(line, repline_step[1].format(new_step_))
 
     # Write modified input file
     with open(inpfile, 'w') as f:
         f.write(inplines)
+        f.close()
 
     return
 
@@ -97,7 +90,6 @@ def submit_setupfile():
     tskid = int(task.stdout.split()[-1])
 
     return tskid
-
 
 # Function to submit simulation
 def submit_runfile():
@@ -117,7 +109,6 @@ def find_new_step():
 
     # Check steps from dcd files, if not defined new step is 1
     if len(dcdfiles):
-
         dcdidcs = np.zeros_like(dcdfiles, dtype=int)
         for idcd, dcdfile in enumerate(dcdfiles):
             idx = dcdfile[:]
@@ -147,10 +138,11 @@ def check_status(tskid):
 
     # Return if job is still running
     if tskid in idslist:
+        log(f"{datetime.datetime.now()} : Job {tskid} still running. Sleeping")
         return tskid
     else:
-        log_2_file("")
-        log_2_file(str(datetime.datetime.now()) + f": Job {tskid:d} done.")
+        log("")
+        log(f"{datetime.datetime.now()} : Job {tskid:d} done.")
 
     if not os.path.exists(os.path.join(os.getcwd(), outfile)):
         return tskid
@@ -161,40 +153,40 @@ def check_status(tskid):
 
     # If not, check for normal termination
     for line in outlines[::-1]:
-        if " NORMAL TERMINATION" in line: # keep space to avoid going here through keywords ABNORMAL TERMINATION
-            log_2_file(f": Job {tskid:d} finished.")
+        if "NORMAL TERMINATION" in line:
+            log(f": Job {tskid:d} finished.")
             return 0
-    log_2_file(f": Job {tskid:d} broken. Check restart")
+    log(f": Job {tskid:d} broken. Check restart")
 
     # If not, check for error line in output file
 
-    # # Check for error line
-    # if errline is None:
-    #     errline_found = True
-    # else:
-    #     errline_found = False
-    #     for line in outlines[::-1]:
-    #         if errline in line:
-    #             errline_found = True
-    #             break
-    #
-    # # If error line, found start resubmission, else return
-    # if not errline_found:
-    #     log_2_file("Error not found! Job is done")
-    #     return 0
-    # else:
-    #     log_2_file("Error found! Restart job")
+    # Check for error line
+    if errline is None: # If this setting is chosen, then there is no option besides NORMAL TERMINATION to allow exit
+        errline_found = True
+    else:
+        errline_found = False
+        for line in outlines[::-1]:
+            if errline in line:
+                errline_found = True
+                break
+
+    # If error line, found start resubmission, else return
+    if not errline_found:
+        log("Error not found! Job is done")
+        return 0
+    else:
+        log(f"{datetime.datetime.now()} : Error found! Restart job")
 
     # Find new step
     new_step = find_new_step()
-    log_2_file(f"  New step: {new_step:d}")
+    log(f"  New step: {new_step:d}")
 
     # Update input file with new step
     update_inpfile(new_step)
 
     # Resubmit simulation
     new_tskid = submit_runfile()
-    log_2_file(f"  New task id: {new_tskid:d}")
+    log(f"  New task id: {new_tskid:d}")
 
     # Return new task id
     return new_tskid
@@ -215,36 +207,28 @@ def observe_loop(tskid):
 
         # Check for stop flag
         if os.path.exists(stpfile):
-            log_2_file("Stop flag found!")
+            log("Stop flag found! Most likely TERMINATION due to CANCELATION")
             finished = True
 
         # If tskid is zero, job is finished
         if current_tskid == 0:
-            log_2_file("Job is done!(?)")
+            print("Job is done!(?)")
             finished = True
     return
 
 
 # Start job and observation
 if __name__ == "__main__":
-
-    # if setup didn't run yet, submit setup first
-    # and wait observe till completed then run the setup
-    if not os.path.exists(os.path.join(os.getcwd(), run_checker_file)):
-        tskid = submit_setupfile()
-        log_2_file(f"Setup and run task id: {tskid:d}")
-        observe_loop(tskid)
-
     # Find new step
     new_step = find_new_step()
-    log_2_file(f"Start at step {new_step:d}")
+    log(f"{datetime.datetime.now()} : Start at step {new_step:d}")
 
     # Update input file with new step
     update_inpfile(new_step)
 
     # Submit initial simulation setup
-    tskid = submit_runfile()
-    log_2_file(f"Initial task id: {tskid:d}")
+    tskid = submit_setupfile()
+    log(f"{datetime.datetime.now()} : Initial task id: {tskid:d}")
 
     # Run observation
     observe_loop(tskid)
