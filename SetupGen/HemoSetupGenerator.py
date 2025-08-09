@@ -80,8 +80,7 @@ def generate_all_permutations_unbound(active_directory, base_setup_directory):
                         f.close()
 
 
-if __name__ == "__main__":
-
+def run_generation(relative_path_to_base_setup, collection_destination_folder_name):
     overwrite = False
     live = False
 
@@ -90,19 +89,21 @@ if __name__ == "__main__":
     if "cluster" in cwd:
         live = True
 
-    hemo_base_path = os.path.join(cwd, "Kai_setup")
-    path_setup_destination = "all_perm_unbound_with_ghosts"
+    hemo_base_path = os.path.join(cwd, relative_path_to_base_setup)
+    path_setup_destination = collection_destination_folder_name
 
     if live:
-        hemo_base_path = cwd + "/" + "V3_Kai_setup"
+        hemo_base_path = os.path.join(cwd, relative_path_to_base_setup)
 
-    if os.path.exists(cwd + "/" + path_setup_destination) and (not overwrite and not live):
+    if os.path.exists(os.path.join(cwd, path_setup_destination)) and (not overwrite and not live):
         print(f"EITHER SET OVERWRITE TRUE OR CHANGE PATH OR DELETE {os.path.join(cwd, path_setup_destination)}")
         exit()
-    # elif os.path.exists(cwd + "/" + path_setup_destination):
-    #     shutil.rmtree(cwd + "/" + path_setup_destination)
 
-    mkdir(cwd + "/" + path_setup_destination)
-    active_dir = cwd + "/" + path_setup_destination
+    mkdir(os.path.join(cwd, path_setup_destination))
+    active_dir = os.path.join(cwd, path_setup_destination)
 
     generate_all_permutations_unbound(active_dir, hemo_base_path)
+
+
+if __name__ == "__main__":
+    run_generation("Kai_setup", "all_perm_unbound_with_ghosts")
