@@ -3,7 +3,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-u = mda.Universe("step5_999.pdb", "step5_999.dcd")
+
+coords = ["../permutation0000/step5_999.dcd", "../permutation0000/step5_998.dcd", "../permutation0000/step5_997.dcd"]
+u = mda.Universe("../permutation0000/run_setup.psf", coords)
 heme_segids = sorted(set(atom.segid for atom in u.select_atoms("resname HEME")))
 
 # Triangular combinations

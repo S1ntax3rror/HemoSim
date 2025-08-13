@@ -4,17 +4,17 @@ import sys
 from multiprocessing import Pool
 
 
-def replace_line_in_file(file, old_line, new_line):
-    with open(file, "r") as f:
-        lines = f.readlines()
-        lines_copy = lines.copy()
-        for i, line in enumerate(lines):
-            if old_line in line:
-                lines_copy[i] = new_line
-        f.close()
-    with open(file, "w") as f:
-        f.writelines(lines_copy)
-        f.close()
+# def replace_line_in_file(file, old_line, new_line):
+#     with open(file, "r") as f:
+#         lines = f.readlines()
+#         lines_copy = lines.copy()
+#         for i, line in enumerate(lines):
+#             if old_line in line:
+#                 lines_copy[i] = new_line
+#         f.close()
+#     with open(file, "w") as f:
+#         f.writelines(lines_copy)
+#         f.close()
 
 
 def observe_run(path):

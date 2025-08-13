@@ -43,8 +43,11 @@ for i in i_files:
     copy_tree(template_setup_folder, new_setup_path)
 
     # replace crd and psf files
-    os.remove(os.path.join(new_setup_path, "init_setup.crd"))
-    os.remove(os.path.join(new_setup_path, "init_setup.psf"))
+    if os.path.exists(os.path.join(new_setup_path, "init_setup.crd")):
+        os.remove(os.path.join(new_setup_path, "init_setup.crd"))
+    if os.path.exists(os.path.join(new_setup_path, "init_setup.psf")):
+        os.remove(os.path.join(new_setup_path, "init_setup.psf"))
+
     shutil.copy(crd_path, os.path.join(new_setup_path, "init_setup.crd"))
     shutil.copy(psf_path, os.path.join(new_setup_path, "init_setup.psf"))
 
