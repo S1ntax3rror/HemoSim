@@ -12,7 +12,7 @@ perm_prefix = "/cluster/home/kaeserj/HemoSimulations/a_Permutations/Simulation_c
 clean_setup_path = "/cluster/home/kaeserj/HemoSimulations/a_Permutations/V7_ShortRun_NVT/clean"
 # specify which frame to take in 100ps steps (10 = 1ns)
 # structures = [[10, 40], [23], [10, 47]]
-structures = [[124, 129], [506, 510]]
+structures = [[0, 124], [18], [95, 506], [294]]
 
 # structures = [[0, 124], [18], [95, 506], [294]]
 
@@ -31,7 +31,7 @@ for perm, struct_list in zip(permutations, structures):
         struct_perm_path = os.path.join(cwd, f"perm{perm}struct{struct}")
         os.mkdir(struct_perm_path)
 
-        for i in range(5):
+        for i in range(100):
             location_path = os.path.join(struct_perm_path, f"run{i}")
             os.mkdir(location_path)
 
@@ -44,6 +44,7 @@ for perm, struct_list in zip(permutations, structures):
 
             run_file_list = [run_setup_psf, run_setup_str, run_setup_crd]
 
-            print("Generating setup with parameters", location_path, "\n", clean_setup_path, "\n", run_file_list, "\n\n")
+            print(f"Generating setup for structure {struct}. Run {i}")
+            # print("Generating setup with parameters", location_path, "\n", clean_setup_path, "\n", run_file_list, "\n\n")
 
             gen_simulation_setup(location_path, clean_setup_path, run_file_list)
