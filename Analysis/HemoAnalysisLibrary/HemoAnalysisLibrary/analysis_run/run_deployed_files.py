@@ -21,13 +21,11 @@ def get_subdirs(path):
 
 
 if __name__ == "__main__":
-    depth = 2
-    analysis_file_name = "fe_CO_direct_analysis_with_angle.py"
+    os.chdir("../..")
     cwd = os.getcwd()
     sub_dirs = get_subdirs(cwd)
 
+    run_analysis = "run_analysis.sh"
 
     for directory in sub_dirs:
-        analysis_path = cwd
-
-        submit_analysis(analysis_path)
+        submit_analysis(os.path.join(directory, run_analysis))
